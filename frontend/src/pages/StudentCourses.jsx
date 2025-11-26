@@ -35,11 +35,14 @@ const StudentCourses = () => {
     const fetchEnrollments = async () => {
         try {
             const response = await axios.get('/api/enrollments/my-enrollments');
-            const ids = response.data.map((e) => e.course._id);
+            // Ensure response.data is an array
+            const enrollmentsData = Array.isArray(response.data) ? response.data : [];
+            const ids = enrollmentsData.map((e) => e.course._id);
             setEnrolledCourseIds(ids);
         }
         catch (error) {
             console.error('Error fetching enrollments:', error);
+            setEnrolledCourseIds([]); // Set empty array on error
         }
     };
     const categories = ['All', 'Web Development', 'Data Science', 'Design', 'Business', 'Programming', 'Other'];

@@ -29,8 +29,10 @@ const AdminUsers = () => {
             if (search)
                 params.search = search;
             const response = await axios.get('/api/admin/users', { params });
+            // Ensure response.data is an array
+            const usersArray = Array.isArray(response.data) ? response.data : [];
             // Normalize role values and ensure they match dropdown options
-            const usersData = response.data.map((user) => {
+            const usersData = usersArray.map((user) => {
                 let normalizedRole = user.role?.toLowerCase() || 'student';
                 // Ensure role is one of the valid options
                 if (!['student', 'instructor', 'admin'].includes(normalizedRole)) {

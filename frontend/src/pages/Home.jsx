@@ -25,10 +25,13 @@ const Home = () => {
     const fetchCourses = async () => {
         try {
             const response = await axios.get('/api/courses', { params: { limit: 6 } });
-            setCourses(response.data.slice(0, 6));
+            // Ensure response.data is an array
+            const courses = Array.isArray(response.data) ? response.data : [];
+            setCourses(courses.slice(0, 6));
         }
         catch (error) {
             console.error('Error fetching courses:', error);
+            setCourses([]); // Set empty array on error
         }
         finally {
             setLoading(false);
@@ -49,11 +52,14 @@ const Home = () => {
     const fetchCategories = async () => {
         try {
             const response = await axios.get('/api/courses');
-            const uniqueCategories = Array.from(new Set(response.data.map((c) => c.category).filter(Boolean)));
+            // Ensure response.data is an array
+            const courses = Array.isArray(response.data) ? response.data : [];
+            const uniqueCategories = Array.from(new Set(courses.map((c) => c.category).filter(Boolean)));
             setCategories(uniqueCategories.slice(0, 6));
         }
         catch (error) {
             console.error('Error fetching categories:', error);
+            setCategories([]); // Set empty array on error
         }
     };
     const handleCourseClick = (courseId) => {

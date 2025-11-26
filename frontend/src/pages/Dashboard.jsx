@@ -15,8 +15,10 @@ const Dashboard = () => {
     const fetchEnrollments = async () => {
         try {
             const response = await axios.get('/api/enrollments/my-enrollments');
+            // Ensure response.data is an array
+            const enrollmentsData = Array.isArray(response.data) ? response.data : [];
             // Normalize IDs (backend should already normalize, but ensure compatibility)
-            const normalizedEnrollments = response.data.map((e) => ({
+            const normalizedEnrollments = enrollmentsData.map((e) => ({
                 ...e,
                 _id: e._id || e.id,
                 course: {
@@ -44,7 +46,8 @@ const Dashboard = () => {
             const quizPromises = courseIds.map(async (courseId) => {
                 try {
                     const quizResponse = await axios.get(`/api/quizzes/course/${courseId}`);
-                    return quizResponse.data.map((quiz) => ({
+                    const quizzesData = Array.isArray(quizResponse.data) ? quizResponse.data : [];
+                    return quizzesData.map((quiz) => ({
                         ...quiz,
                         course: uniqueEnrollments.find((e) => e.course._id === courseId)?.course
                     }));

@@ -13,7 +13,9 @@ const WatchLessons = () => {
     const fetchEnrollments = async () => {
         try {
             const response = await axios.get('/api/enrollments/my-enrollments');
-            const enrollmentsWithLessons = await Promise.all(response.data.map(async (enrollment) => {
+            // Ensure response.data is an array
+            const enrollmentsData = Array.isArray(response.data) ? response.data : [];
+            const enrollmentsWithLessons = await Promise.all(enrollmentsData.map(async (enrollment) => {
                 try {
                     const courseResponse = await axios.get(`/api/courses/${enrollment.course._id}`);
                     return {
