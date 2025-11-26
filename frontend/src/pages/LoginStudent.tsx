@@ -17,7 +17,14 @@ const LoginStudent = () => {
 
     try {
       await login(email, password, 'student');
-      navigate('/dashboard');
+      // Check if there's a redirect path stored (e.g., from course click)
+      const redirectPath = localStorage.getItem('redirectAfterLogin');
+      if (redirectPath) {
+        localStorage.removeItem('redirectAfterLogin');
+        navigate(redirectPath);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
       setError(errorMessage);

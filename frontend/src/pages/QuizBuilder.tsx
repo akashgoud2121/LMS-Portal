@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { showToast } from '../utils/toast';
 
 interface Option {
   text: string;
@@ -64,10 +65,10 @@ const QuizBuilder: React.FC = () => {
 
     try {
       await axios.post('/api/quizzes', quiz);
-      alert('Quiz created successfully!');
+      showToast.success('Quiz created successfully!');
       navigate('/instructor/dashboard');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error creating quiz');
+      showToast.error(error.response?.data?.message || 'Error creating quiz');
     } finally {
       setSaving(false);
     }

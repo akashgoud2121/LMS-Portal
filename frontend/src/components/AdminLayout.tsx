@@ -1,8 +1,8 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
-import { Link } from 'react-router-dom';
-import { FaHome } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { FaSignOutAlt } from 'react-icons/fa';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -10,9 +10,17 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   const getPageTitle = () => {
-    if (location.pathname === '/admin/dashboard') return 'Dashboard';
+    if (location.pathname === '/admin' || location.pathname === '/admin/') return 'Home';
+    if (location.pathname === '/admin/dashboard') return 'Analytics Dashboard';
     if (location.pathname === '/admin/users') return 'User Management';
     if (location.pathname === '/admin/courses') return 'Course Management';
     if (location.pathname === '/admin/approvals') return 'Pending Approvals';
@@ -33,13 +41,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <h1 className="text-2xl font-semibold text-gray-900">{getPageTitle()}</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                to="/"
-                className="text-gray-500 hover:text-gray-700 p-2.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                title="Back to Home"
+              <div className="flex items-center space-x-3 mr-4">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">Admin</p>
+                  <p className="text-xs text-gray-500">Administrator</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-gray-600 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors duration-200 font-medium"
+                title="Logout"
               >
-                <FaHome className="text-lg" />
-              </Link>
+                <FaSignOutAlt className="text-lg" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
             </div>
           </div>
         </header>

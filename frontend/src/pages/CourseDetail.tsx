@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../utils/imageUtils';
+import { showToast } from '../utils/toast';
 import { FaQuestionCircle, FaClock, FaCheckCircle, FaLock } from 'react-icons/fa';
 
 interface Lesson {
@@ -102,7 +103,11 @@ const CourseDetail: React.FC = () => {
 
   const handleEnroll = async () => {
     if (!user) {
-      navigate('/login');
+      // Store the course ID to redirect back after login
+      if (id) {
+        localStorage.setItem('redirectAfterLogin', `/courses/${id}`);
+      }
+      navigate('/student/login');
       return;
     }
 
@@ -110,9 +115,10 @@ const CourseDetail: React.FC = () => {
     try {
       await axios.post(`/api/enrollments/${id}`);
       setIsEnrolled(true);
+      showToast.success('Successfully enrolled in course!');
       navigate(`/courses/${id}/lesson/${course?.lessons[0]?._id}`);
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Enrollment failed');
+      showToast.error(error.response?.data?.message || 'Enrollment failed');
     } finally {
       setEnrolling(false);
     }
@@ -185,7 +191,12 @@ const CourseDetail: React.FC = () => {
                     </button>
                   ) : (
                     <Link
-                      to="/login"
+                      to="/student/login"
+                      onClick={() => {
+                        if (id) {
+                          localStorage.setItem('redirectAfterLogin', `/courses/${id}`);
+                        }
+                      }}
                       className="block w-full text-center bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 transition"
                     >
                       Login to Enroll

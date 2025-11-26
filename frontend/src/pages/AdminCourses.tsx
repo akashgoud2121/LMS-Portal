@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from '../components/AdminLayout';
-import { FaBook, FaCheckCircle, FaUsers, FaBookOpen, FaUser } from 'react-icons/fa';
+import { getImageUrl } from '../utils/imageUtils';
+import { showToast } from '../utils/toast';
+import { FaBook, FaCheckCircle, FaUsers, FaBookOpen } from 'react-icons/fa';
 
 interface Course {
   id: string;
   title: string;
   description: string;
+  thumbnail?: string;
   instructor: {
     name: string;
     email: string;
@@ -43,8 +46,9 @@ const AdminCourses: React.FC = () => {
         isPublished: !currentStatus
       });
       fetchCourses();
+      showToast.success(`Course ${!currentStatus ? 'published' : 'unpublished'} successfully`);
     } catch (error) {
-      alert('Failed to update course status');
+      showToast.error('Failed to update course status');
     }
   };
 
@@ -92,6 +96,19 @@ const AdminCourses: React.FC = () => {
               key={course.id}
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-transparent hover:border-blue-500"
             >
+              {/* Course Thumbnail */}
+              {course.thumbnail && (
+                <div className="relative overflow-hidden h-48 bg-gray-200">
+                  <img
+                    src={getImageUrl(course.thumbnail)}
+                    alt={course.title}
+                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-700"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x250?text=Course+Image';
+                    }}
+                  />
+                </div>
+              )}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">

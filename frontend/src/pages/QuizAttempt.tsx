@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import StudentSidebar from '../components/StudentSidebar';
+import { showToast } from '../utils/toast';
 
 interface Option {
   text: string;
@@ -100,10 +101,10 @@ const QuizAttempt: React.FC = () => {
         timeSpent
       });
       
-      alert(`Quiz submitted! Your score: ${response.data.percentage}% (${response.data.score}/${response.data.totalPoints} points)`);
+      showToast.success(`Quiz submitted! Your score: ${response.data.percentage}% (${response.data.score}/${response.data.totalPoints} points)`);
       navigate(`/courses/${id}`);
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error submitting quiz');
+      showToast.error(error.response?.data?.message || 'Error submitting quiz');
     } finally {
       setSubmitting(false);
     }

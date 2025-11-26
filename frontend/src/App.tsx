@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -20,6 +22,7 @@ import InstructorQuizzes from './pages/InstructorQuizzes';
 import CourseBuilder from './pages/CourseBuilder';
 import QuizBuilder from './pages/QuizBuilder';
 import InstructorSidebar from './components/InstructorSidebar';
+import AdminHome from './pages/AdminHome';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminCourses from './pages/AdminCourses';
@@ -45,6 +48,18 @@ const AppContent = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hide navbar on admin, instructor, and student routes - sidebars replace it */}
       {!isAdminRoute && !isInstructorRoute && !isStudentRoute && <Navbar />}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <Routes>
         <Route path="/" element={<Home />} />
         
@@ -194,6 +209,14 @@ const AppContent = () => {
         />
         
         {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminHome />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/dashboard"
           element={

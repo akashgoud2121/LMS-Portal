@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import InstructorSidebar from '../components/InstructorSidebar';
 import { getImageUrl } from '../utils/imageUtils';
+import { showToast } from '../utils/toast';
 import { 
   FaBook, 
   FaUsers, 
@@ -72,9 +73,10 @@ const InstructorCourses: React.FC = () => {
         isPublished: !currentStatus
       });
       fetchCourses();
+      showToast.success(`Course ${!currentStatus ? 'published' : 'unpublished'} successfully`);
     } catch (error) {
       console.error('Error toggling publish status:', error);
-      alert('Failed to update course status');
+      showToast.error('Failed to update course status');
     }
   };
 
@@ -85,11 +87,11 @@ const InstructorCourses: React.FC = () => {
 
     try {
       await axios.delete(`/api/courses/${courseId}`);
-      alert('Course deleted successfully!');
+      showToast.success('Course deleted successfully!');
       fetchCourses();
     } catch (error: any) {
       console.error('Error deleting course:', error);
-      alert(error.response?.data?.message || 'Failed to delete course');
+      showToast.error(error.response?.data?.message || 'Failed to delete course');
     }
   };
 

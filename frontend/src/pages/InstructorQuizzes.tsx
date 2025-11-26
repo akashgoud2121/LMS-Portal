@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import InstructorSidebar from '../components/InstructorSidebar';
+import { showToast } from '../utils/toast';
 import { FaQuestionCircle, FaPlusCircle, FaEdit, FaTrash, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 interface Quiz {
@@ -43,11 +44,11 @@ const InstructorQuizzes: React.FC = () => {
 
     try {
       await axios.delete(`/api/quizzes/${quizId}`);
-      alert('Quiz deleted successfully!');
+      showToast.success('Quiz deleted successfully!');
       fetchQuizzes();
     } catch (error: any) {
       console.error('Error deleting quiz:', error);
-      alert(error.response?.data?.message || 'Failed to delete quiz');
+      showToast.error(error.response?.data?.message || 'Failed to delete quiz');
     }
   };
 

@@ -17,7 +17,7 @@ const LoginAdmin = () => {
 
     try {
       await login(email, password, 'admin');
-      navigate('/admin/dashboard');
+      navigate('/admin');
     } catch (err: any) {
       console.error('Login error:', err);
       if (err.response?.data?.message) {

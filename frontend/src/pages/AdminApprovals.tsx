@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from '../components/AdminLayout';
+import { showToast } from '../utils/toast';
 import { FaCheckCircle, FaUserGraduate, FaChalkboardTeacher, FaUser, FaClock, FaShieldAlt, FaTimesCircle } from 'react-icons/fa';
 
 interface PendingUser {
@@ -59,8 +60,9 @@ const AdminApprovals: React.FC = () => {
       await axios.post(`/api/admin/users/${userId}/approve`);
       fetchPendingUsers();
       fetchApprovalStats();
+      showToast.success('User approved successfully');
     } catch (error) {
-      alert('Failed to approve user');
+      showToast.error('Failed to approve user');
     } finally {
       setProcessing(null);
     }
@@ -68,7 +70,7 @@ const AdminApprovals: React.FC = () => {
 
   const handleReject = async (userId: string) => {
     if (!rejectionReason[userId] || rejectionReason[userId].trim() === '') {
-      alert('Please provide a rejection reason');
+      showToast.warning('Please provide a rejection reason');
       return;
     }
 
@@ -80,8 +82,9 @@ const AdminApprovals: React.FC = () => {
       setRejectionReason({ ...rejectionReason, [userId]: '' });
       fetchPendingUsers();
       fetchApprovalStats();
+      showToast.success('User rejected successfully');
     } catch (error) {
-      alert('Failed to reject user');
+      showToast.error('Failed to reject user');
     } finally {
       setProcessing(null);
     }

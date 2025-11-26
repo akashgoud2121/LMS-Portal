@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../context/AuthContext';
+import { showToast } from '../utils/toast';
 
 interface User {
   id: string;
@@ -59,15 +60,16 @@ const AdminUsers: React.FC = () => {
         isActive: !currentStatus
       });
       fetchUsers();
+      showToast.success(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error) {
-      alert('Failed to update user status');
+      showToast.error('Failed to update user status');
     }
   };
 
 
   const handleDeleteUser = async (userId: string, isMasterAdmin: boolean) => {
     if (isMasterAdmin) {
-      alert('Master admin cannot be deleted');
+      showToast.warning('Master admin cannot be deleted');
       return;
     }
 
@@ -78,8 +80,9 @@ const AdminUsers: React.FC = () => {
     try {
       await axios.delete(`/api/admin/users/${userId}`);
       fetchUsers();
+      showToast.success('User deleted successfully');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to delete user');
+      showToast.error(error.response?.data?.message || 'Failed to delete user');
     }
   };
 

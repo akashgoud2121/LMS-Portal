@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import InstructorSidebar from '../components/InstructorSidebar';
+import { showToast } from '../utils/toast';
 import { FaVideo, FaFile, FaPlusCircle, FaTrash, FaEdit, FaLink, FaFilePdf, FaYoutube, FaPlay, FaImage } from 'react-icons/fa';
 import { getYouTubeThumbnail, getYouTubeEmbedUrl, isYouTubeUrl } from '../utils/videoUtils';
 
@@ -87,7 +88,7 @@ const InstructorMaterials: React.FC = () => {
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMaterial.title || !newMaterial.url) {
-      alert('Please fill in title and URL');
+      showToast.warning('Please fill in title and URL');
       return;
     }
 
@@ -95,17 +96,17 @@ const InstructorMaterials: React.FC = () => {
     try {
       if (newMaterial._id) {
         await axios.put(`/api/materials/${newMaterial._id}`, newMaterial);
-        alert('Material updated successfully!');
+        showToast.success('Material updated successfully!');
       } else {
         await axios.post('/api/materials', newMaterial);
-        alert('Material added successfully!');
+        showToast.success('Material added successfully!');
       }
       setShowAddModal(false);
       setNewMaterial({ title: '', description: '', type: 'video', url: '' });
       fetchMaterials();
     } catch (error: any) {
       console.error('Error adding material:', error);
-      alert(error.response?.data?.message || 'Error adding material');
+      showToast.error(error.response?.data?.message || 'Error adding material');
     } finally {
       setSaving(false);
     }
@@ -118,11 +119,11 @@ const InstructorMaterials: React.FC = () => {
 
     try {
       await axios.delete(`/api/materials/${materialId}`);
-      alert('Material deleted successfully!');
+      showToast.success('Material deleted successfully!');
       fetchMaterials();
     } catch (error: any) {
       console.error('Error deleting material:', error);
-      alert(error.response?.data?.message || 'Failed to delete material');
+      showToast.error(error.response?.data?.message || 'Failed to delete material');
     }
   };
 
@@ -133,11 +134,11 @@ const InstructorMaterials: React.FC = () => {
 
     try {
       await axios.delete(`/api/courses/${courseId}/lessons/${lessonId}`);
-      alert('Lesson deleted successfully!');
+      showToast.success('Lesson deleted successfully!');
       fetchMaterials();
     } catch (error: any) {
       console.error('Error deleting lesson:', error);
-      alert(error.response?.data?.message || 'Failed to delete lesson');
+      showToast.error(error.response?.data?.message || 'Failed to delete lesson');
     }
   };
 

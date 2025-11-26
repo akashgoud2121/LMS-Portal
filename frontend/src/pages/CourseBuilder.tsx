@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getImageUrl } from '../utils/imageUtils';
+import { showToast } from '../utils/toast';
 
 interface Lesson {
   _id?: string;
@@ -68,13 +69,13 @@ const CourseBuilder: React.FC = () => {
 
     // Validate file type
     if (!file.type.match('image.*')) {
-      alert('Please select an image file');
+      showToast.warning('Please select an image file');
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      showToast.warning('File size must be less than 5MB');
       return;
     }
 
@@ -112,9 +113,10 @@ const CourseBuilder: React.FC = () => {
       if (fileInput) {
         fileInput.value = '';
       }
+      showToast.success('Thumbnail uploaded successfully');
     } catch (error: any) {
       console.error('Error uploading thumbnail:', error);
-      alert(error.response?.data?.message || 'Error uploading image');
+      showToast.error(error.response?.data?.message || 'Error uploading image');
     } finally {
       setUploadingThumbnail(false);
     }
@@ -133,17 +135,18 @@ const CourseBuilder: React.FC = () => {
         const courseId = response.data._id || response.data.id;
         if (!courseId) {
           console.error('Course ID not found in response:', response.data);
-          alert('Course created but ID not found. Please refresh the page.');
+          showToast.error('Course created but ID not found. Please refresh the page.');
           navigate('/instructor/dashboard');
           return;
         }
+        showToast.success('Course created successfully!');
         navigate(`/instructor/courses/${courseId}/edit`);
         return;
       }
-      alert('Course saved successfully!');
+      showToast.success('Course saved successfully!');
       navigate('/instructor/dashboard');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error saving course');
+      showToast.error(error.response?.data?.message || 'Error saving course');
     } finally {
       setSaving(false);
     }
@@ -196,7 +199,7 @@ const CourseBuilder: React.FC = () => {
 
   const handleAddLessonToCourse = async (index: number) => {
     if (!isEditing || !id) {
-      alert('Please save the course first before adding lessons');
+      showToast.warning('Please save the course first before adding lessons');
       return;
     }
 
@@ -204,7 +207,7 @@ const CourseBuilder: React.FC = () => {
     
     // Validate required fields
     if (!lesson.title || lesson.title.trim() === '') {
-      alert('Please enter a lesson title');
+      showToast.warning('Please enter a lesson title');
       return;
     }
 
@@ -228,7 +231,7 @@ const CourseBuilder: React.FC = () => {
       const response = await axios.post(`/api/courses/${id}/lessons`, lessonData);
       console.log('Lesson saved successfully:', response.data);
       fetchCourse();
-      alert('Lesson added successfully!');
+      showToast.success('Lesson added successfully!');
     } catch (error: any) {
       console.error('Error adding lesson:', error);
       console.error('Error response:', error.response?.data);
@@ -237,7 +240,7 @@ const CourseBuilder: React.FC = () => {
                           error.response?.data?.errors?.[0]?.message ||
                           error.message ||
                           'Error adding lesson';
-      alert(`Failed to save lesson: ${errorMessage}`);
+      showToast.error(`Failed to save lesson: ${errorMessage}`);
     }
   };
 

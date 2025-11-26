@@ -1,7 +1,7 @@
 const express = require('express');
 const { QueryTypes, Op } = require('sequelize');
 const { body } = require('express-validator');
-const { User, Course, Enrollment, Quiz, QuizAttempt, sequelize } = require('../models');
+const { User, Course, Enrollment, Quiz, QuizAttempt, Lesson, sequelize } = require('../models');
 const { auth, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -11,13 +11,19 @@ router.use(auth);
 router.use(authorize('admin'));
 
 // @route   GET /api/admin/users
-// @desc    Get all users
+// @desc    Get all users (excludes admin users by default unless role filter is set to 'admin')
 router.get('/users', async (req, res) => {
   try {
     const { role, search } = req.query;
     const where = {};
 
-    if (role) where.role = role;
+    if (role) {
+      where.role = role;
+    } else {
+      // By default, exclude admin users from the list (admin is not a regular user)
+      where.role = { [Op.ne]: 'admin' };
+    }
+    
     if (search) {
       const { Op } = require('sequelize');
       where[Op.or] = [
@@ -263,11 +269,29 @@ router.get('/courses', async (req, res) => {
         model: User,
         as: 'instructor',
         attributes: ['id', 'name', 'email']
+      }, {
+        model: Lesson,
+        as: 'lessons',
+        attributes: ['id']
       }],
       order: [['createdAt', 'DESC']]
     });
 
-    res.json(courses);
+    // Format response to include totalLessons and enrolledStudents count
+    const formattedCourses = await Promise.all(courses.map(async (course) => {
+      const courseJson = course.toJSON();
+      courseJson.totalLessons = course.lessons ? course.lessons.length : 0;
+      
+      // Count enrollments
+      const enrollmentCount = await Enrollment.count({
+        where: { courseId: course.id }
+      });
+      courseJson.enrolledStudents = enrollmentCount;
+      
+      return courseJson;
+    }));
+
+    res.json(formattedCourses);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -307,7 +331,8 @@ router.put('/courses/:id/publish', async (req, res) => {
 // @desc    Get analytics data
 router.get('/analytics', async (req, res) => {
   try {
-    const totalUsers = await User.count();
+    // Exclude admin users from total count (admin is not a regular user)
+    const totalUsers = await User.count({ where: { role: { [Op.ne]: 'admin' } } });
     const totalStudents = await User.count({ where: { role: 'student' } });
     const totalInstructors = await User.count({ where: { role: 'instructor' } });
     const totalCourses = await Course.count();
@@ -389,12 +414,13 @@ router.get('/analytics', async (req, res) => {
           enrollments: enrollmentsCount
         });
         
-        // Count users created in this month (cumulative)
+        // Count users created in this month (cumulative) - exclude admin users
         const usersCount = await User.count({
           where: {
             createdAt: {
               [Op.lte]: endDate
-            }
+            },
+            role: { [Op.ne]: 'admin' }
           }
         });
         
