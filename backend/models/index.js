@@ -36,7 +36,12 @@ QuizAttempt.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
 User.hasMany(QuizAttempt, { foreignKey: 'studentId', as: 'quizAttempts' });
 
 Material.belongsTo(User, { foreignKey: 'instructorId', as: 'instructor' });
+Material.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+Material.belongsTo(Lesson, { foreignKey: 'lessonId', as: 'lesson' });
 User.hasMany(Material, { foreignKey: 'instructorId', as: 'materials' });
+Course.hasMany(Material, { foreignKey: 'courseId', as: 'materials' });
+// Use 'independentMaterials' to avoid collision with Lesson's 'materials' JSONB field
+Lesson.hasMany(Material, { foreignKey: 'lessonId', as: 'independentMaterials' });
 
 module.exports = {
   sequelize,

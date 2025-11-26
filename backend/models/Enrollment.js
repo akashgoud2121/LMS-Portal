@@ -42,6 +42,22 @@ module.exports = (sequelize) => {
     completedAt: {
       type: DataTypes.DATE,
       allowNull: true
+    },
+    rating: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 1,
+        max: 5
+      }
+    },
+    ratingComment: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    ratedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     timestamps: true,

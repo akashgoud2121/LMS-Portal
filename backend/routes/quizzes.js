@@ -1,5 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
+const { Op } = require('sequelize');
 const { Quiz, Question, QuizAttempt, Course, User, Enrollment } = require('../models');
 const { auth, authorize } = require('../middleware/auth');
 
@@ -23,14 +24,24 @@ router.get('/course/:courseId', auth, async (req, res) => {
     });
 
     // Normalize to include _id
-    const normalizedQuizzes = quizzes.map(quiz => {
+    // Add question counts to each quiz
+    const normalizedQuizzes = await Promise.all(quizzes.map(async (quiz) => {
       const quizJson = quiz.toJSON();
       quizJson._id = quizJson.id;
       if (quizJson.instructor) {
         quizJson.instructor._id = quizJson.instructor.id;
       }
+      
+      // Get question count
+      const questionCount = await Question.count({
+        where: { quizId: quiz.id }
+      });
+      quizJson.questionCount = questionCount;
+      // Add empty questions array with correct length for frontend compatibility
+      quizJson.questions = questionCount > 0 ? [] : []; // Empty array, but frontend can use questionCount
+      
       return quizJson;
-    });
+    }));
 
     res.json(normalizedQuizzes);
   } catch (error) {
@@ -58,7 +69,8 @@ router.get('/:id', auth, async (req, res) => {
         {
           model: Question,
           as: 'questions',
-          order: [['order', 'ASC']]
+          order: [['order', 'ASC']],
+          required: false // Use left join to include quiz even if no questions
         }
       ]
     });
@@ -72,32 +84,79 @@ router.get('/:id', auth, async (req, res) => {
     if (quizJson.course) quizJson.course._id = quizJson.course.id;
     if (quizJson.instructor) quizJson.instructor._id = quizJson.instructor.id;
 
+    // Ensure questions array exists and is properly formatted
+    if (!quizJson.questions || quizJson.questions.length === 0) {
+      // If no questions in include, fetch them directly
+      const questions = await Question.findAll({
+        where: { quizId: quiz.id },
+        order: [['order', 'ASC']]
+      });
+      quizJson.questions = questions.map(q => {
+        const qJson = q.toJSON();
+        qJson._id = qJson.id;
+        return qJson;
+      });
+    } else {
+      // Normalize question IDs
+      quizJson.questions = quizJson.questions.map(q => {
+        const qJson = { ...q };
+        qJson._id = qJson.id || qJson._id;
+        qJson.id = qJson.id || qJson._id;
+        return qJson;
+      });
+    }
+    
+    // Add questionCount for consistency
+    quizJson.questionCount = quizJson.questions.length;
+    
+    // Debug logging
+    console.log('Quiz fetched:', {
+      quizId: quizJson.id,
+      title: quizJson.title,
+      questionsCount: quizJson.questions.length,
+      questionCount: quizJson.questionCount,
+      totalPoints: quizJson.totalPoints,
+      questionIds: quizJson.questions.map(q => q.id || q._id)
+    });
+
     // If student, hide correct answers
     if (req.user.role === 'student') {
-      if (quizJson.questions) {
-        quizJson.questions = quizJson.questions.map(q => {
-          const questionJson = { ...q };
-          questionJson._id = questionJson.id;
-          if (questionJson.type === 'multiple-choice' && questionJson.options) {
-            questionJson.options = questionJson.options.map(opt => ({
-              text: opt.text,
+      quizJson.questions = quizJson.questions.map(q => {
+        const questionJson = { ...q };
+        questionJson._id = questionJson.id || questionJson._id;
+        questionJson.id = questionJson.id || questionJson._id;
+        
+        if (questionJson.type === 'multiple-choice' && questionJson.options) {
+          questionJson.options = questionJson.options.map(opt => {
+            if (typeof opt === 'string') {
+              return { text: opt };
+            }
+            return {
+              text: opt.text || opt,
               isCorrect: undefined // Hide answer
-            }));
-          }
-          delete questionJson.correctAnswer;
-          return questionJson;
-        });
-      }
+            };
+          });
+        }
+        delete questionJson.correctAnswer;
+        return questionJson;
+      });
+      
+      console.log('Quiz for student:', {
+        quizId: quizJson.id,
+        title: quizJson.title,
+        questionsCount: quizJson.questions.length,
+        questions: quizJson.questions.map(q => ({ id: q._id || q.id, type: q.type, hasOptions: !!q.options }))
+      });
+      
       return res.json(quizJson);
     }
 
     // Normalize questions for instructor/admin
-    if (quizJson.questions) {
-      quizJson.questions = quizJson.questions.map(q => {
-        q._id = q.id;
-        return q;
-      });
-    }
+    quizJson.questions = quizJson.questions.map(q => {
+      q._id = q.id || q._id;
+      q.id = q.id || q._id;
+      return q;
+    });
 
     res.json(quizJson);
   } catch (error) {
@@ -256,6 +315,48 @@ router.put('/:id', auth, authorize('instructor', 'admin'), async (req, res) => {
   }
 });
 
+// @route   PATCH /api/quizzes/:id/publish
+// @desc    Toggle quiz publish state (Instructor/Owner)
+router.patch('/:id/publish', auth, authorize('instructor', 'admin'), async (req, res) => {
+  try {
+    const { isPublished } = req.body;
+
+    if (typeof isPublished !== 'boolean') {
+      return res.status(400).json({ message: 'isPublished flag must be provided as boolean' });
+    }
+
+    const quiz = await Quiz.findByPk(req.params.id, {
+      include: [{
+        model: Course,
+        as: 'course',
+        attributes: ['id', 'title']
+      }]
+    });
+
+    if (!quiz) {
+      return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    if (req.user.role !== 'admin' && quiz.instructorId !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    quiz.isPublished = isPublished;
+    await quiz.save();
+
+    const quizJson = quiz.toJSON();
+    quizJson._id = quizJson.id;
+    if (quizJson.course) {
+      quizJson.course._id = quizJson.course.id;
+    }
+
+    res.json(quizJson);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   DELETE /api/quizzes/:id
 // @desc    Delete quiz (Instructor/Owner)
 router.delete('/:id', auth, authorize('instructor', 'admin'), async (req, res) => {
@@ -312,6 +413,59 @@ router.get('/instructor/my-quizzes', auth, authorize('instructor', 'admin'), asy
   }
 });
 
+// @route   GET /api/quizzes/student/available
+// @desc    Get published quizzes for a student's enrolled courses
+router.get('/student/available', auth, authorize('student'), async (req, res) => {
+  try {
+    const enrollments = await Enrollment.findAll({
+      where: { studentId: req.user.id },
+      attributes: ['courseId']
+    });
+
+    if (!enrollments.length) {
+      return res.json([]);
+    }
+
+    const courseIds = enrollments.map(enrollment => enrollment.courseId);
+
+    const quizzes = await Quiz.findAll({
+      where: {
+        courseId: { [Op.in]: courseIds },
+        isPublished: true
+      },
+      include: [{
+        model: Course,
+        as: 'course',
+        attributes: ['id', 'title']
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Add question counts to each quiz
+    const normalizedQuizzes = await Promise.all(quizzes.map(async (quiz) => {
+      const quizJson = quiz.toJSON();
+      quizJson._id = quizJson.id;
+      if (quizJson.course) {
+        quizJson.course._id = quizJson.course.id;
+      }
+      
+      // Get question count
+      const questionCount = await Question.count({
+        where: { quizId: quiz.id }
+      });
+      quizJson.questionCount = questionCount;
+      quizJson.questions = []; // Empty array for list views
+      
+      return quizJson;
+    }));
+
+    res.json(normalizedQuizzes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   POST /api/quizzes/:id/attempt
 // @desc    Submit quiz attempt (Student)
 router.post('/:id/attempt', auth, authorize('student'), async (req, res) => {
@@ -349,7 +503,23 @@ router.post('/:id/attempt', auth, authorize('student'), async (req, res) => {
     }
 
     const { answers: submittedAnswers, timeSpent } = req.body;
-    const questions = quiz.questions || [];
+    let questions = quiz.questions || [];
+    
+    // If questions not included, fetch them directly
+    if (!questions || questions.length === 0) {
+      questions = await Question.findAll({
+        where: { quizId: quiz.id },
+        order: [['order', 'ASC']]
+      });
+      console.log('Fetched questions directly for quiz attempt:', {
+        quizId: quiz.id,
+        questionsCount: questions.length
+      });
+    }
+    
+    if (questions.length === 0) {
+      return res.status(400).json({ message: 'Quiz has no questions' });
+    }
     
     // Grade the quiz
     let score = 0;
@@ -362,6 +532,11 @@ router.post('/:id/attempt', auth, authorize('student'), async (req, res) => {
 
       if (question.type === 'multiple-choice') {
         isCorrect = question.correctAnswer === submitted.answer;
+      } else if (question.type === 'true-false') {
+        // For true/false, compare case-insensitively
+        const correctAnswer = question.correctAnswer ? question.correctAnswer.toLowerCase().trim() : '';
+        const submittedAnswer = submitted.answer ? submitted.answer.toLowerCase().trim() : '';
+        isCorrect = correctAnswer === submittedAnswer;
       } else if (question.type === 'text' || question.type === 'short-answer') {
         // For text answers, do simple comparison (case-insensitive, trimmed)
         const correctAnswer = question.correctAnswer ? question.correctAnswer.toLowerCase().trim() : '';

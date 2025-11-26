@@ -43,14 +43,18 @@ Thumbs.db
 backend/uploads/*
 !backend/uploads/.gitkeep
 backend/.env
+backend/.env.local
+backend/.env.production
 backend/logs/
 backend/tmp/
+backend/*.log
 
 # Frontend
 frontend/build/
 frontend/dist/
 frontend/.env
 frontend/.env.local
+frontend/.env.production
 frontend/.env.production.local
 
 # OS

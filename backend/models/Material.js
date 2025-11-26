@@ -31,6 +31,22 @@ module.exports = (sequelize) => {
         key: 'id'
       }
     },
+    courseId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'Courses',
+        key: 'id'
+      }
+    },
+    lessonId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'Lessons',
+        key: 'id'
+      }
+    },
     fileUrl: {
       type: DataTypes.STRING,
       defaultValue: ''

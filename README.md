@@ -2,6 +2,8 @@
 
 A comprehensive Learning Management System (LMS) platform built with React, TypeScript, Node.js, Express, and PostgreSQL.
 
+**Status**: ✅ Production Ready
+
 ## Features
 
 ### 🎓 Student Features
@@ -215,9 +217,49 @@ npm run dev  # Runs on http://localhost:3002 (Vite)
 ### Frontend (.env)
 - `VITE_API_URL` - Backend API URL (optional, uses proxy in development)
 
+## Production Deployment
+
+For detailed production deployment instructions, see [PRODUCTION.md](./PRODUCTION.md).
+
+### Quick Production Setup
+
+1. **Set Environment Variables**
+   - Copy `backend/env.example` to `backend/.env` and configure
+   - Copy `frontend/env.example` to `frontend/.env.production` and configure
+
+2. **Build Frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   ```
+
+3. **Start Backend**
+   ```bash
+   cd backend
+   npm install --production
+   npm start
+   ```
+
+4. **Run Database Migrations**
+   ```bash
+   cd backend
+   npm run migrate:materials
+   ```
+
+## Security Features
+
+- ✅ JWT-based authentication
+- ✅ Password hashing with bcrypt
+- ✅ Rate limiting on API routes
+- ✅ CORS protection
+- ✅ Security headers
+- ✅ Input validation
+- ✅ SQL injection protection (via Sequelize)
+- ✅ Environment variable validation
+
 ## Future Enhancements
 
-- [ ] File upload functionality for videos and materials
 - [ ] Email notifications
 - [ ] Certificate generation
 - [ ] Discussion forums
@@ -225,6 +267,8 @@ npm run dev  # Runs on http://localhost:3002 (Vite)
 - [ ] Advanced analytics
 - [ ] Mobile responsive improvements
 - [ ] Video streaming optimization
+- [ ] Redis caching
+- [ ] WebSocket support for real-time features
 
 ## License
 

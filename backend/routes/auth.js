@@ -3,18 +3,30 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { User } = require('../models');
 const { auth } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/security');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production';
+
+// Validate JWT_SECRET on module load
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET === 'your_super_secret_jwt_key_change_this_in_production') {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL ERROR: JWT_SECRET must be set in production environment!');
+    process.exit(1);
+  } else {
+    console.warn('WARNING: JWT_SECRET is not set or using default value. Please set a secure JWT_SECRET in your .env file.');
+  }
+}
 
 // Generate JWT Token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+  const secret = JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production';
+  return jwt.sign({ userId }, secret, { expiresIn: '7d' });
 };
 
 // @route   POST /api/auth/register/:role
 // @desc    Register a new user (student or instructor only)
-router.post('/register/:role', [
+router.post('/register/:role', authLimiter, [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
@@ -72,7 +84,7 @@ router.post('/register/:role', [
 
 // @route   POST /api/auth/login
 // @desc    Login user (works for all roles)
-router.post('/login', [
+router.post('/login', authLimiter, [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {

@@ -9,7 +9,13 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production');
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret || jwtSecret === 'your_super_secret_jwt_key_change_this_in_production') {
+      console.error('ERROR: JWT_SECRET is not set or using default value. Please set a secure JWT_SECRET in your .env file.');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
+    const decoded = jwt.verify(token, jwtSecret);
     const user = await User.findByPk(decoded.userId, {
       attributes: { exclude: ['password'] }
     });
